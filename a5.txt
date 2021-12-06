@@ -1,0 +1,1253 @@
+T.K. Bui | CS 185C | Assignment 5, due 12/02/2021
+======================================================================================================================
+
+Script started on 2021-12-06 06:41:32+00:00 [TERM="screen" TTY="/dev/pts/1" COLUMNS="93" LINES="50"]
+----------------------------------------------------------------------------------------------------------------------
+1) You now have two directories with 100 helpful reviews under REVIEWS; and 100 unhelpful reviews under
+   REVIEWS_UNHELPFUL. Your next goal is to train a machine learning model to see if you can successfully distinguish 
+   the helpful from the unhelpful reviews based on the text. For this purpose you will use the Weka package.
+ 
+bui@f6linuxA7:~$ ls
+a5.txt                             cmds.log             weka-3-8-5
+amazon_reviews_us_Books_v1_02.tsv  datamash-1.3         weka-3-8-5-azul-zulu-linux.zip
+assignments                        datamash-1.3.tar.gz  wekafiles
+bin                                share                worksheets
+
+bui@f6linuxA7:~$ mkdir training
+
+bui@f6linuxA7:~$ mkdir training/with_tweets
+
+bui@f6linuxA7:~$ mkdir training/without_tweets
+
+bui@f6linuxA7:~$ cd assignments/a4/
+
+bui@f6linuxA7:~/assignments/a4$ ls
+1000reviews.txt    assignment.txt                  top100reviews.txt
+100badreviews.txt  assignment.txt.clean            top100tweets.column6.txt
+REVIEWS            commands.txt                    top100tweets.txt
+REVIEWS_UNHELPFUL  lemmatization.sh                training.1600000.processed.noemoticon.csv
+TWEETS             sed_replacements.sh             trainingandtestdata.zip
+a4.txt             similar_tweets.txt
+append_tweets.sh   testdata.manual.2009.06.14.csv
+
+bui@f6linuxA7:~/assignments/a4$ cp -r REVIEWS ~/training/with_tweets
+
+bui@f6linuxA7:~/assignments/a4$ cp -r REVIEWS_UNHELPFUL ~/training/with_tweets
+
+bui@f6linuxA7:~/assignments/a4$ cd ~
+
+bui@f6linuxA7:~$ cd training/with_tweets
+
+bui@f6linuxA7:~/training/with_tweets$ ls
+REVIEWS  REVIEWS_UNHELPFUL
+
+bui@f6linuxA7:~/training/with_tweets$ cd ../without_tweets
+
+bui@f6linuxA7:~/training/without_tweets$ ls
+
+bui@f6linuxA7:~/training/without_tweets$ mkdir REVIEWS
+
+bui@f6linuxA7:~/training/without_tweets$ mkdir REVIEWS_UNHELPFUL
+
+bui@f6linuxA7:~/training/without_tweets$ cd ../with_tweets
+
+bui@f6linuxA7:~/training/with_tweets$ for i in `ls REVIEWS`; do head -n 1 "REVIEWS/$i" > "../without_tweets/REVIEWS/$i" ; done
+
+bui@f6linuxA7:~/training/with_tweets$ for i in `ls REVIEWS_UNHELPFUL`; do head -n 1 "REVIEWS_UNHELPFUL/$i" > "../without_tweets/REVIEWS_UNHELPFUL/$i" ; done
+
+EXPLANATION: First, I use ls to show that I have already downloaded and unzipped weka before starting the screen
+recording, since unzipping the file results in many lines outputted to the recording. I also create a folder called
+training with 2 subfolders, with_tweets and without_tweets. I then copy the REVIEWS and REVIEWS_UNHELPFUL folders
+from assignment 4 to training/with_tweets to be used later. These are 100 helpful and 100 unhelpful reviews that
+have been cleaned up of html tags and stop words, and have had tweets with overlapping words appended to them.
+Then, I create REVIEWS and REVIEWS_UNHELPFUL folders in training/without_tweets to be used later. I get only the
+review bodies of all files by getting the first line in all reviews in with_tweets, and then I create new review
+files of only these review bodies in training/without_tweets and put them in either REVIEWS or REVIEWS_UNHELPFUL.
+
+----------------------------------------------------------------------------------------------------------------------
+2) Run Weka on the server as follows.
+
+bui@f6linuxA7:~/training/with_tweets$ cd ~/weka-3-8-5 
+
+bui@f6linuxA7:~/weka-3-8-5$ export CLASSPATH=$CLASSPATH:`pwd`/weka.jar:`pwd`/libsvm.jar
+
+EXPLANATION: I followed these steps from the assignment instructions to add weka to my classpath.
+
+----------------------------------------------------------------------------------------------------------------------
+3) You will convert the text files you got from assignment 4 to an .arff file.
+
+bui@f6linuxA7:~/weka-3-8-5$ cd ~/training/with_tweets
+
+bui@f6linuxA7:~/training/with_tweets$ ls
+REVIEWS  REVIEWS_UNHELPFUL
+
+bui@f6linuxA7:~/training/with_tweets$ mkdir text_example
+
+bui@f6linuxA7:~/training/with_tweets$ mkdir text_example/helpful_reviews
+
+bui@f6linuxA7:~/training/with_tweets$ mkdir text_example/unhelpful_reviews
+
+bui@f6linuxA7:~/training/with_tweets$ for i in `ls "REVIEWS"`; do cp "REVIEWS/$i" text_example/helpful_reviews ; done
+
+bui@f6linuxA7:~/training/with_tweets$ for i in `ls "REVIEWS_UNHELPFUL"`; do cp "REVIEWS_UNHELPFUL/$i" text_example/unhelpful_reviews ; done
+
+bui@f6linuxA7:~/training/with_tweets$ cd text_example/helpful_reviews
+
+bui@f6linuxA7:~/training/with_tweets/text_example/helpful_reviews$ ls
+R12EHXBC0GP2C2.txt  R22G14MRW8D4JT.txt  R327Y8FVALBGWW.txt  R3THZWOBS1086J.txt
+R14F73WG25M4RC.txt  R23JMJ74IKZ6J9.txt  R33E8WCTE4BQHY.txt  R3VK6TOXURV3Q2.txt
+R15D0OS2OA83H1.txt  R282WW4ZDH3B5V.txt  R33JIA4B863YJH.txt  R3W3O968BWU7JG.txt
+R160DHJPJ4B20R.txt  R299KYRKCKSUR5.txt  R33O2810BC4UR0.txt  R3Y4Y8Y9D0VDN.txt
+R16OSGJQ7I7QN8.txt  R2CRRS0T4PUYN8.txt  R34X92SSRBI0N4.txt  R5F0SREGDRXJ2.txt
+R196XZ2EZVH48K.txt  R2D0FHU29U7BAX.txt  R38RXR8USISV94.txt  R6NFCABUEFXBS.txt
+R1AA0JXK1U70RO.txt  R2DXLNKF0EL4CI.txt  R38T0M1TCTITDI.txt  R8IK28XKE11J2.txt
+R1E1MS2H672ZCK.txt  R2E2KP6K6OUBEX.txt  R39RSXXM7RRJ76.txt  RATYYOFKRQ6KG.txt
+R1GIM3XY2S5XKZ.txt  R2FDLOLE8ULAUW.txt  R3AW5JRZYH66M5.txt  RCAZ1P9DNA9NW.txt
+R1GSSIPURVQ82M.txt  R2FKDWNCIXPY5L.txt  R3BTWN817OKMOJ.txt  RCHF5TT2YX0S2.txt
+R1LG0O66HWUI2Q.txt  R2G7QDVS4X8ZMU.txt  R3CR6VVUR450F0.txt  RFQGXN0OJ52H7.txt
+R1LVRBD4ZZQ1UL.txt  R2JEXK5IEOJV9E.txt  R3CX1WT0P5ZJIJ.txt  RGX7NA33824BR.txt
+R1M60NYB4UPRJ8.txt  R2JSWNTAO83X3V.txt  R3F583X11I1RP6.txt  RI1SA17A89DE.txt
+R1M6OU2B3FR7E6.txt  R2KDYUXL4SWWCZ.txt  R3H4WDLIBB2UCH.txt  RM0CSYVWKHW5W.txt
+R1NHS4SDMPYF7T.txt  R2KSA5X3HOO15L.txt  R3HBY2C366LBGQ.txt  RMGFMK0DT661U.txt
+R1OPUF771LL5O5.txt  R2LEQ0HTZ9909Q.txt  R3HEM8IBEXQ4WE.txt  RNSB10A8SS8NJ.txt
+R1OVM6HX7FTQD0.txt  R2N94GR63ML7G0.txt  R3IPH0VNN8406T.txt  RO83XT32BMOO6.txt
+R1RKQW3QSOZ11C.txt  R2PQ9EPQO25N5C.txt  R3JV7XK3DS4FKL.txt  RP145DP72VQNV.txt
+R1S06GK0YSO3YQ.txt  R2R1ERQ6W5ONRI.txt  R3MD5TZJGIPTDU.txt  RQ041TWOQ78I.txt
+R1S41DJNZ4GXWF.txt  R2UWXPWOOBCP2M.txt  R3MKXKE909RL76.txt  RQ9HJSFB424SW.txt
+R1TK5Q90GGJSTN.txt  R2W9ISG79IU9IK.txt  R3NV6VKBFPBE5R.txt  RST0WIFGD80U2.txt
+R1TMN2NF6QLO9P.txt  R2YKAYUQP2L6H5.txt  R3ORKEXHWTMOIC.txt  RW26U57JFM39W.txt
+R1U4MUMCNHRIFO.txt  R2ZTKMOYLMW8N4.txt  R3Q5KQOAPTIE78.txt  RWFAYY59NPK0Q.txt
+R1Y2EJNBUDQ0BU.txt  R2ZWUHBLJGPTX9.txt  R3RJUVR1004699.txt  RX6OWUF8EFZ72.txt
+R202MMP0AWPMNY.txt  R31MMNEA2UPG3W.txt  R3TG0TPV7LVQW4.txt  RXFLVGTDEZNAA.txt
+
+bui@f6linuxA7:~/training/with_tweets/text_example/helpful_reviews$ ls | wc -l
+100
+
+bui@f6linuxA7:~/training/with_tweets/text_example/helpful_reviews$ cd ../unhelpful_reviews
+
+bui@f6linuxA7:~/training/with_tweets/text_example/unhelpful_reviews$ ls
+R121VUBD3RIDXO.txt  R1RYKSZM15B7H2.txt  R2UP6XSVYJBJ2H.txt  R8KSCC087QZBJ.txt
+R12CRPKGVM9U81.txt  R1SX06I5A0X0NG.txt  R2XU9JU32I8ECL.txt  R9D30BEROYYWC.txt
+R12CUIV8LIFCYD.txt  R1TNWRKIVHVYOV.txt  R2XV27EZ8O3MUE.txt  R9XZTUFW70FO0.txt
+R13T7B40Z4DAE6.txt  R1UB948IF27BT9.txt  R2YW5GGYNKXW36.txt  RCYSGJQVQLD3R.txt
+R14T3QS8G0EZB1.txt  R1V2BZ1JFBCJBV.txt  R313MQ46O8D7YU.txt  RDGYTVIEAW8A7.txt
+R15EYWQPKZ53QE.txt  R1VKEE2NWSWDRU.txt  R31D2FNIKV6ZQJ.txt  RE5XV6NVB17NT.txt
+R16CRLM3WHWZZ6.txt  R1VLTFQPW9SQOI.txt  R31IDAH2KTYNE5.txt  REU5EU00K286C.txt
+R17VJ32BI1ECQL.txt  R1WYOZ7Z0I83B.txt   R31J0S10NQLSO5.txt  RFRYYH4G0D958.txt
+R1AT0CFYFP98M1.txt  R1XIKKRDV0TP05.txt  R33Q4RURXNVN7M.txt  RH7UV4Q03YVQL.txt
+R1FJPQD63AKRJK.txt  R1XY5WKF3V7HGX.txt  R34D9MGZ6AU3TZ.txt  RHR8DD8567UVV.txt
+R1GEWQQ67KJC5T.txt  R1ZB49MLPJOWW1.txt  R35J90IL4H6DAH.txt  RKL3BR7D32YLB.txt
+R1GS3TLMAU03PY.txt  R229JMAAVX4SMK.txt  R36ACJURUNHD38.txt  RKPVE7HXIL19X.txt
+R1GXWLHEMO88A2.txt  R22OR4VN556YRZ.txt  R36LFQKJTWUQT2.txt  RLQKITK5IJWO1.txt
+R1HNXOW3NDTXF1.txt  R24G7JP0RCQ4HN.txt  R37QGRLNSZ4URH.txt  RP5O1O9Q5MA7G.txt
+R1I3ARZ48N11AF.txt  R24N5RYEECP3Z2.txt  R3AI10T5TJFH8X.txt  RSFDBFM646ETS.txt
+R1IMPR1OURMX0J.txt  R27TR8B9R48TCJ.txt  R3DVZIVYQ14SHF.txt  RSMDXC4JO6U8J.txt
+R1L0WCS2OHEUV4.txt  R2BL0A1KN1DN3W.txt  R3FLXN29T1WU1E.txt  RTDP0LELKESZJ.txt
+R1MBNO9UJBRDCM.txt  R2DLN5W8FLJZMD.txt  R3JRPAL6ALK70Q.txt  RUTQXWMXVX9GX.txt
+R1MJ6DCVH1PA5T.txt  R2FMEHVIF9Y47H.txt  R3LC6QYBELI96G.txt  RVF5KO0UCQ3FK.txt
+R1MY5BHIS3SFXX.txt  R2IWOI342Q4MYU.txt  R3QP8VTFWA343T.txt  RWVBCDA9HHJ1T.txt
+R1NZZVOB7LQ2KG.txt  R2LIA5T60ODY20.txt  R3UA9C01HFUV9T.txt  RXBFWMPMP65XU.txt
+R1OMGK8TCNN0DO.txt  R2NIKP5W8R00PH.txt  R3UX0X53CMWH.txt    RXFNEE3RCL0DU.txt
+R1OUDEQYT9ULH.txt   R2PDWZ9JMO17X1.txt  R3V043VUZCW4QX.txt  RYAKOMK44DE58.txt
+R1OZW47JD2H98F.txt  R2RF6A68YTRDUE.txt  R4BKJTRIECPK2.txt   RYRDVTBIWVF0.txt
+R1RRV02NZJTLM1.txt  R2SO7GWIH233FS.txt  R66Y1AAU8JATX.txt   RYRTISCRC7DRV.txt
+
+bui@f6linuxA7:~/training/with_tweets/text_example/unhelpful_reviews$ ls | wc -l
+100
+
+bui@f6linuxA7:~/training/with_tweets/text_example/unhelpful_reviews$ cd ..
+
+bui@f6linuxA7:~/training/with_tweets/text_example$ cd ..
+
+bui@f6linuxA7:~/training/with_tweets$ java weka.core.converters.TextDirectoryLoader -dir text_example > text_example.arff 
+
+EXPLANATION: I tested the final files from assignment 4 first, which are the helpful and unhelpful reviews WITH
+tweets appended to them. So, I made the text_example directory with its subdirectories helpful_reviews and
+unhelpful_reviews first, in ~/training/with_tweets. I then copy all helpful and unhelpful reviews to the corresponding
+directory in text_example. Then, I run the command given in the assignment in order to get text_example.arff.
+ 
+----------------------------------------------------------------------------------------------------------------------
+4) Check with vi (or any other editor or pager) if your resulting .arff file looks good.
+
+bui@f6linuxA7:~/training/with_tweets$ ls
+REVIEWS  REVIEWS_UNHELPFUL  text_example  text_example.arff
+
+bui@f6linuxA7:~/training/with_tweets$ nano text_example.arff
+
+@relation _home_bui_training_with_tweets_text_example
+
+@attribute text string
+@attribute @@class@@ {helpful_reviews,unhelpful_reviews}
+
+@data
+
+'I read the good  the bad  the ugly review thi book   The good excellent one don say lot useful stuff  the bad ignore the feat attempt writ 13 book the ugly sound like idiot    will admit 
+
+EXPLANATION: I used nano to check the resulting .arff file and it looked good. I removed most of the huge block of
+text that appears when using nano in screen capture, but still included the beginning to the text_example.arff file.
+I removed most of the first review in the file because since it includes tweets, the amount of lines and words in
+the review is a lot. OVerall, everything looked good according to the demo seen in class.
+
+----------------------------------------------------------------------------------------------------------------------
+5) You will convert the .arff file from the previous step to a word vector.
+
+bui@f6linuxA7:~/training/with_tweets$ java -Xmx1024m weka.filters.unsupervised.attribute.StringToWordVector  -i text_example.arff -o text_example_training.arff -M 2
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by weka.core.WekaPackageClassLoaderManager (file:/home/bui/weka-3-8-5/weka.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of weka.core.WekaPackageClassLoaderManager
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+
+EXPLANATION: I used the command given on the assignment for this step to get the word vector from the 
+text_example.arff file.
+
+----------------------------------------------------------------------------------------------------------------------
+6) Open the word vector file text_example_training.arff (with any editor or pager) and answer: how do you describe 
+   this format? What do the numbers in the .arff file represent?
+
+bui@f6linuxA7:~/training/with_tweets$ nano text_example_training.arff
+
+@attribute @iamlilnicki numeric
+@attribute @januarycrimson numeric
+@attribute @jdarter numeric
+@attribute @jeancjumbe numeric
+@attribute @julieebaby numeric
+@attribute @katortiz numeric
+@attribute @localtweep numeric
+@attribute @makeherfamou numeric
+@attribute @markhardy1974 numeric
+@attribute @msdrama numeric
+@attribute @nationwideclas numeric
+(I removed the rest of the lines seen with nano since the file is around 1000 or so lines.)
+
+bui@f6linuxA7:~/training/with_tweets$ tail -n 1 text_example_training.arff
+{0 unhelpful_reviews,1 1,4 1,5 1,6 1,7 1,8 1,9 1,10 1,11 1,12 1,13 1,14 1,15 1,16 1,17 1,18 1,19 1,20 1,21 1,22 1,23 1,24 1,25 1,26 1,27 1,28 1,29 1,30 1,31 1,32 1,33 1,34 1,35 1,36 1,37 1,38 1,39 1,40 1,41 1,42 1,43 1,44 1,45 1,46 1,47 1,48 1,49 1,50 1,51 1,52 1,53 1,54 1,55 1,56 1,58 1,59 1,60 1,61 1,62 1,63 1,64 1,65 1,66 1,67 1,69 1,73 1,74 1,75 1,76 1,79 1,80 1,81 1,82 1,84 1,86 1,87 1,88 1,90 1,91 1,92 1,93 1,94 1,95 1,98 1,99 1,100 1,101 1,102 1,103 1,104 1,106 1,109 1,110 1,111 1,114 1,115 1,116 1,118 1,119 1,121 1,122 1,123 1,124 1,126 1,127 1,128 1,129 1,131 1,132 1,136 1,138 1,141 1,142 1,143 1,144 1,145 1,146 1,147 1,149 1,150 1,151 1,152 1,153 1,154 1,155 1,156 1,157 1,158 1,160 1,161 1,162 1,163 1,164 1,165 1,167 1,168 1,169 1,170 1,171 1,174 1,175 1,176 1,177 1,178 1,179 1,180 1,181 1,182 1,183 1,185 1,187 1,188 1,189 1,190 1,192 1,193 1,197 1,198 1,199 1,200 1,202 1,203 1,204 1,205 1,206 1,207 1,208 1,209 1,210 1,211 1,215 1,217 1,219 1,220 1,221 1,222 1,223 1,224 1,228 1,230 1,231 1,233 1,234 1,235 1,237 1,238 1,239 1,240 1,241 1,242 1,247 1,248 1,249 1,250 1,251 1,253 1,254 1,256 1,259 1,262 1,265 1,266 1,268 1,269 1,270 1,271 1,273 1,274 1,275 1,276 1,278 1,279 1,280 1,281 1,282 1,283 1,284 1,285 1,286 1,290 1,292 1,294 1,295 1,296 1,302 1,303 1,304 1,305 1,306 1,307 1,308 1,310 1,312 1,313 1,314 1,315 1,316 1,317 1,318 1,319 1,320 1,322 1,323 1,326 1,329 1,330 1,333 1,334 1,335 1,338 1,339 1,342 1,343 1,345 1,349 1,350 1,351 1,352 1,353 1,354 1,356 1,364 1,365 1,366 1,367 1,369 1,373 1,374 1,376 1,377 1,378 1,381 1,382 1,383 1,384 1,385 1,387 1,388 1,392 1,393 1,394 1,397 1,400 1,404 1,405 1,406 1,409 1,412 1,413 1,414 1,415 1,416 1,417 1,419 1,420 1,421 1,429 1,430 1,432 1,434 1,440 1,441 1,444 1,448 1,451 1,453 1,455 1,456 1,458 1,460 1,461 1,462 1,465 1,466 1,467 1,468 1,469 1,470 1,471 1,477 1,478 1,479 1,480 1,481 1,482 1,484 1,486 1,488 1,489 1,490 1,493 1,496 1,497 1,498 1,503 1,504 1,506 1,507 1,508 1,509 1,510 1,513 1,514 1,515 1,516 1,517 1,518 1,520 1,525 1,526 1,527 1,528 1,531 1,532 1,534 1,535 1,536 1,539 1,541 1,542 1,543 1,544 1,545 1,548 1,549 1,551 1,554 1,556 1,557 1,558 1,561 1,565 1,566 1,567 1,570 1,573 1,584 1,586 1,590 1,592 1,593 1,594 1,595 1,597 1,599 1,604 1,606 1,608 1,609 1,610 1,612 1,613 1,618 1,620 1,622 1,623 1,624 1,625 1,626 1,627 1,628 1,629 1,630 1,631 1,632 1,637 1,638 1,639 1,640 1,641 1,644 1,645 1,646 1,648 1,649 1,651 1,653 1,654 1,655 1,656 1,659 1,660 1,661 1,662 1,664 1,665 1,666 1,667 1,668 1,669 1,670 1,672 1,673 1,675 1,676 1,677 1,678 1,680 1,681 1,682 1,684 1,685 1,689 1,694 1,698 1,699 1,700 1,701 1,703 1,710 1,711 1,712 1,715 1,716 1,717 1,718 1,719 1,720 1,724 1,725 1,726 1,727 1,732 1,733 1,734 1,738 1,739 1,740 1,741 1,742 1,745 1,746 1,748 1,750 1,754 1,756 1,757 1,759 1,761 1,762 1,767 1,770 1,773 1,775 1,776 1,782 1,783 1,786 1,787 1,788 1,791 1,792 1,793 1,794 1,795 1,798 1,799 1,800 1,801 1,802 1,807 1,808 1,812 1,816 1,822 1,823 1,824 1,825 1,826 1,828 1,829 1,830 1,831 1,832 1,833 1,834 1,835 1,839 1,840 1,841 1,842 1,844 1,846 1,847 1,849 1,851 1,852 1,854 1,855 1,856 1,857 1,860 1,865 1,867 1,868 1,870 1,873 1,874 1,876 1,877 1,880 1,883 1,885 1,886 1,887 1,889 1,890 1,891 1,892 1,897 1,898 1,900 1,901 1,902 1,904 1,906 1,907 1,908 1,915 1,917 1,918 1,919 1,920 1,922 1,923 1,924 1,925 1,926 1,927 1,929 1,930 1,931 1,932 1,933 1,936 1,937 1,939 1,940 1,941 1,943 1,944 1,950 1,952 1,953 1,954 1,957 1,958 1,959 1,961 1,963 1,964 1,965 1,966 1,968 1,969 1,970 1,972 1,973 1,978 1,979 1,981 1,982 1,984 1,985 1,986 1,987 1,989 1,990 1,993 1,994 1,995 1,996 1,997 1,998 1,999 1,1002 1,1003 1,1004 1,1007 1,1011 1,1012 1,1014 1,1015 1,1016 1,1018 1,1020 1,1021 1,1025 1,1026 1,1028 1,1030 1,1032 1,1033 1,1034 1,1035 1}
+
+EXPLANATION: I would describe this format as a list of all words that appeared in the helpful and unhelpful reviews,
+and then the numbers are to show which words appeared in each file and how many times they appeared. Then, this could 
+mean that a machine learning model can see which words tend to appear in helpful vs. unhelpful reviews and use that 
+information to guess whether a review is helpful or unhelpful. 
+
+----------------------------------------------------------------------------------------------------------------------
+7) Run any Weka classifier you like. 
+
+bui@f6linuxA7:~/training/with_tweets$ java -Xmx1024m  weka.classifiers.meta.ClassificationViaRegression -W weka.classifiers.trees.M5P -num-decimal-places 4  -t  text_example_training.arff -d text_example_training.model -c 1
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by weka.core.WekaPackageClassLoaderManager (file:/home/bui/weka-3-8-5/weka.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of weka.core.WekaPackageClassLoaderManager
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+Dec 06, 2021 7:04:56 AM com.github.fommil.netlib.BLAS <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeSystemBLAS
+Dec 06, 2021 7:04:57 AM com.github.fommil.netlib.BLAS <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeRefBLAS
+Dec 06, 2021 7:04:57 AM com.github.fommil.netlib.LAPACK <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeSystemLAPACK
+Dec 06, 2021 7:04:57 AM com.github.fommil.netlib.LAPACK <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeRefLAPACK
+
+Options: -W weka.classifiers.trees.M5P -num-decimal-places 4 
+
+=== Classifier model (full training set) ===
+
+Classification via Regression
+
+Classifier for class with index 0:
+
+5 pruned model tree:
+(using smoothed linear models)
+
+a <= 0.5 : 
+|   which <= 0.5 : LM1 (121/76.214%)
+|   which >  0.5 : LM2 (36/32.839%)
+a >  0.5 : 
+|   @octolinz16 <= 0.5 : LM3 (31/0%)
+|   @octolinz16 >  0.5 : LM4 (12/0%)
+
+LM num: 1
+@@class@@ = 
+	0.022 * *sigh* 
+	- 0.0132 * 2y1zl 
+	- 0.0312 * @caregiv 
+	+ 0.3759 * A 
+	+ 0.2572 * Blah 
+	+ 0.0089 * Nee 
+	+ 0.2154 * There 
+	+ 0.1422 * Thi 
+	- 0.0429 * a 
+	+ 0.0179 * detaile 
+	+ 0.0084 * file 
+	+ 0.0361 * reference 
+	+ 0.0114 * some 
+	- 0.665 * t 
+	- 0.0112 * very 
+	+ 0.0353 * which 
+	+ 0.0476
+
+LM num: 2
+@@class@@ = 
+	0.0417 * *sigh* 
+	- 0.0351 * 2y1zl 
+	+ 0.5597 * @caregiv 
+	+ 0.1841 * A 
+	+ 0.0801 * Blah 
+	+ 0.0238 * Nee 
+	+ 0.0575 * There 
+	+ 0.0407 * Thi 
+	- 0.0429 * a 
+	+ 0.0179 * detaile 
+	+ 0.0084 * file 
+	+ 0.0686 * reference 
+	+ 0.0304 * some 
+	- 0.2257 * t 
+	- 0.0298 * very 
+	+ 0.0674 * which 
+	+ 0.0163
+
+LM num: 3
+@@class@@ = 
+	0.0303 * *sigh* 
+	- 0.0311 * @caregiv 
+	+ 0.0254 * @octolinz16 
+	+ 0.1127 * A 
+	+ 0.0295 * Blah 
+	+ 0.0342 * There 
+	+ 0.0286 * Thi 
+	- 0.1272 * a 
+	+ 0.149 * appear 
+	+ 0.2212 * clear 
+	+ 0.0532 * detaile 
+	+ 0.0249 * file 
+	+ 0.0491 * reference 
+	- 0.1307 * t 
+	+ 0.0476 * which 
+	+ 0.0104
+
+LM num: 4
+@@class@@ = 
+	0.0303 * *sigh* 
+	- 0.0311 * @caregiv 
+	+ 0.0433 * @octolinz16 
+	+ 0.1127 * A 
+	+ 0.0295 * Blah 
+	+ 0.0342 * There 
+	+ 0.0286 * Thi 
+	- 0.1272 * a 
+	+ 0.5834 * appear 
+	+ 0.7063 * clear 
+	+ 0.0532 * detaile 
+	+ 0.0249 * file 
+	+ 0.0491 * reference 
+	- 0.1307 * t 
+	+ 0.0476 * which 
+	+ 0.0071
+
+Number of Rules : 4
+
+Classifier for class with index 1:
+
+5 pruned model tree:
+(using smoothed linear models)
+
+a <= 0.5 : 
+|   which <= 0.5 : LM1 (121/76.214%)
+|   which >  0.5 : LM2 (36/32.839%)
+a >  0.5 : 
+|   @octolinz16 <= 0.5 : LM3 (31/0%)
+|   @octolinz16 >  0.5 : LM4 (12/0%)
+
+LM num: 1
+@@class@@ = 
+	-0.022 * *sigh* 
+	+ 0.0132 * 2y1zl 
+	+ 0.0312 * @caregiv 
+	- 0.3759 * A 
+	- 0.2572 * Blah 
+	- 0.0089 * Nee 
+	- 0.2154 * There 
+	- 0.1422 * Thi 
+	+ 0.0429 * a 
+	- 0.0179 * detaile 
+	- 0.0084 * file 
+	- 0.0361 * reference 
+	- 0.0114 * some 
+	+ 0.665 * t 
+	+ 0.0112 * very 
+	- 0.0353 * which 
+	+ 0.9524
+
+LM num: 2
+@@class@@ = 
+	-0.0417 * *sigh* 
+	+ 0.0351 * 2y1zl 
+	- 0.5597 * @caregiv 
+	- 0.1841 * A 
+	- 0.0801 * Blah 
+	- 0.0238 * Nee 
+	- 0.0575 * There 
+	- 0.0407 * Thi 
+	+ 0.0429 * a 
+	- 0.0179 * detaile 
+	- 0.0084 * file 
+	- 0.0686 * reference 
+	- 0.0304 * some 
+	+ 0.2257 * t 
+	+ 0.0298 * very 
+	- 0.0674 * which 
+	+ 0.9837
+
+LM num: 3
+@@class@@ = 
+	-0.0303 * *sigh* 
+	+ 0.0311 * @caregiv 
+	- 0.0254 * @octolinz16 
+	- 0.1127 * A 
+	- 0.0295 * Blah 
+	- 0.0342 * There 
+	- 0.0286 * Thi 
+	+ 0.1272 * a 
+	- 0.149 * appear 
+	- 0.2212 * clear 
+	- 0.0532 * detaile 
+	- 0.0249 * file 
+	- 0.0491 * reference 
+	+ 0.1307 * t 
+	- 0.0476 * which 
+	+ 0.9896
+
+LM num: 4
+@@class@@ = 
+	-0.0303 * *sigh* 
+	+ 0.0311 * @caregiv 
+	- 0.0433 * @octolinz16 
+	- 0.1127 * A 
+	- 0.0295 * Blah 
+	- 0.0342 * There 
+	- 0.0286 * Thi 
+	+ 0.1272 * a 
+	- 0.5834 * appear 
+	- 0.7063 * clear 
+	- 0.0532 * detaile 
+	- 0.0249 * file 
+	- 0.0491 * reference 
+	+ 0.1307 * t 
+	- 0.0476 * which 
+	+ 0.9929
+
+Number of Rules : 4
+
+
+
+Time taken to build model: 3.66 seconds
+
+Time taken to test model on training data: 0.26 seconds
+
+=== Error on training data ===
+
+Correctly Classified Instances         177               88.5    %
+Incorrectly Classified Instances        23               11.5    %
+Kappa statistic                          0.77  
+ean absolute error                      0.2051
+Root mean squared error                  0.3001
+Relative absolute error                 41.0106 %
+Root relative squared error             60.0292 %
+Total Number of Instances              200     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.910    0.140    0.867      0.910    0.888      0.771    0.959     0.960     helpful_reviews
+                 0.860    0.090    0.905      0.860    0.882      0.771    0.959     0.960     unhelpful_reviews
+Weighted Avg.    0.885    0.115    0.886      0.885    0.885      0.771    0.959     0.960     
+
+
+=== Confusion Matrix ===
+
+  a  b   <-- classified as
+ 91  9 |  a = helpful_reviews
+ 14 86 |  b = unhelpful_reviews
+
+Time taken to perform cross-validation: 20.64 seconds
+
+
+=== Stratified cross-validation ===
+
+Correctly Classified Instances         162               81      %
+Incorrectly Classified Instances        38               19      %
+Kappa statistic                          0.62  
+ean absolute error                      0.2548
+Root mean squared error                  0.3538
+Relative absolute error                 50.9501 %
+Root relative squared error             70.7673 %
+Total Number of Instances              200     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.810    0.190    0.810      0.810    0.810      0.620    0.906     0.910     helpful_reviews
+                 0.810    0.190    0.810      0.810    0.810      0.620    0.906     0.900     unhelpful_reviews
+Weighted Avg.    0.810    0.190    0.810      0.810    0.810      0.620    0.906     0.905     
+
+
+=== Confusion Matrix ===
+
+  a  b   <-- classified as
+ 81 19 |  a = helpful_reviews
+ 19 81 |  b = unhelpful_reviews
+
+EXPLANATION: I used the weka classifier command given in the assignment since it also worked for me and gave me
+decently good results for both the set of reviews that had tweets and those that didn't. The results for the first
+confusion matrix was 91% accuracy on helpful_reviews and 86% accuracy for unhelpful_reviews. After stratified
+cross-validation, it was 81% accuracy for both. Note, the files tested here were reviews WITH tweets appended,
+which were originally created during assignment 4 and copied over in step 1 of this assignment.
+
+----------------------------------------------------------------------------------------------------------------------
+8) Put all the commands you used above in a shell script named "text_binary_classify.sh" for future usage. Change 
+   permissions and execute text_binary_classify.sh to check if it works. Your script takes two parameters: 
+   1) The absolute path to your weka installation, 2) The absolute path to the directory with the classes and files 
+   to train upon. The script can skip the vi commands where you checked if the files are ok. 
+
+bui@f6linuxA7:~/training/with_tweets$ cd ~
+
+bui@f6linuxA7:~$ nano
+
+----- SCRIPT: text_binary_classify.sh -----
+
+#!/bin/bash
+
+# Name: T.K. Bui
+# Date: 12/5/2021
+# Script Description:
+# This is a shell script to train a ML model using weka by using helpful
+# and unhelpful reviews from the amazon file.
+
+# NOTE: this program assumes that you have the REVIEWS and REVIEWS_UNHELPFUL
+# folders with the necessary files/reviews in them, and that these folders
+# exist in the second absolute path that is inputted into this script.
+
+# Input:
+# 1) absolute path to your weka installation
+# 2) absolute path to directory with the classes and files to train upon
+
+# Instructions:
+# while in the directory that the script text_binary_classify.sh exists,
+# enter "./text_binary_classify.sh input1 input2" where input1 and input2
+# are the absolute paths described above.
+
+if [ $# -lt 2 ]; # ensure that the needed input values were passed in
+then
+ echo "Too few arguments were passed. Please pass in 1)" \
+ "the absolute path to your weka installation, and 2) the absolute path to the" \
+ "directory with the classes and files to train upon.";
+elif [ ! -d "$1" ] || [ ! -d "$2" ]; # one of the paths isn't valid, so return error message
+then
+ echo "One of the absolute paths inputted is not valid.";
+else # the paths are valid, so execute the rest of the script
+
+ # 1) ensure that weka is added to the classpath
+ export CLASSPATH=$CLASSPATH:$1/weka.jar:$1/libsvm.jar
+
+ # 2) create the text_example folder, populate it with 2 subdirectories, and
+ # populate each subdirectory with reviews or unhelpful reviews.
+ # then, convert this entire directory and its files to an .arff file.
+
+ if [ -d "$2/text_example" ]; # remove text_example directory if it exists
+ then
+  rm -r "$2/text_example"
+ fi
+
+ # make the directories that will become the .arff file later
+ mkdir "$2/text_example"
+ mkdir "$2/text_example/helpful_reviews"
+ mkdir "$2/text_example/unhelpful_reviews"
+
+ # copy all helpful and unhelpful reviews into their respective
+ # directories in text_example
+ for i in `ls "$2/REVIEWS"`; do cp "$2/REVIEWS/$i" "$2/text_example/helpful_reviews" ; done
+ for i in `ls "$2/REVIEWS_UNHELPFUL"`; do cp "$2/REVIEWS_UNHELPFUL/$i" "$2/text_example/unhelpful_reviews" ; done
+
+ # convert the text files to an .arff file
+ java weka.core.converters.TextDirectoryLoader -dir "$2/text_example" > "$2/text_example.arff"
+
+ # convert the new .arff file to a word vector
+ java -Xmx1024m weka.filters.unsupervised.attribute.StringToWordVector -i "$2/text_example.arff" -o "$2/text_example_training.arff" -M 2
+
+ # run the following Weka classifier
+ java -Xmx1024m  weka.classifiers.meta.ClassificationViaRegression -W weka.classifiers.trees.M5P -num-decimal-places 4 -t "$2/text_example_training.arff" -d "$2/text_example_training.model" -c 1
+
+fi
+
+-------------------------------------------
+
+bui@f6linuxA7:~$ ls
+a5.txt                             datamash-1.3             weka-3-8-5
+amazon_reviews_us_Books_v1_02.tsv  datamash-1.3.tar.gz      weka-3-8-5-azul-zulu-linux.zip
+assignments                        share                    wekafiles
+bin                                text_binary_classify.sh  worksheets
+cmds.log                           training
+
+bui@f6linuxA7:~$ chmod +x text_binary_classify.sh 
+
+EXPLANATION: I created the shell script "text_binary_classify.sh" that uses all of my previous commands to automate
+the process of making the .arff files up to running the weka classifier command. My script is only slightly different
+from the expectations since for the second input, it takes in the directory where REVIEWS and REVIEWS_UNHELPFUL
+exists, and then my script will auto-generate the text_example directory and files in the same directory as where
+REVIEWS and REVIEWS_UNHELPFUL exist. Then, it will create the .arff files, etc., and then run the weka classifier.
+
+----------------------------------------------------------------------------------------------------------------------
+9) Now that you have a shell script that should automate your analysis, repeat the ML training for two cases:
+   1) using in training files that contain just the amazon review_body text
+   2) using the files you produced in assignment #4, which contain both the amazon review_body text and integrated tweets.
+
+bui@f6linuxA7:~$ ./text_binary_classify.sh /home/bui/weka-3-8-5 /home/bui/training/without_tweets
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by weka.core.WekaPackageClassLoaderManager (file:/home/bui/weka-3-8-5/weka.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of weka.core.WekaPackageClassLoaderManager
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by weka.core.WekaPackageClassLoaderManager (file:/home/bui/weka-3-8-5/weka.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of weka.core.WekaPackageClassLoaderManager
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+Dec 06, 2021 7:11:45 AM com.github.fommil.netlib.BLAS <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeSystemBLAS
+Dec 06, 2021 7:11:46 AM com.github.fommil.netlib.BLAS <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeRefBLAS
+Dec 06, 2021 7:11:46 AM com.github.fommil.netlib.LAPACK <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeSystemLAPACK
+Dec 06, 2021 7:11:46 AM com.github.fommil.netlib.LAPACK <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeRefLAPACK
+
+Options: -W weka.classifiers.trees.M5P -num-decimal-places 4 
+
+=== Classifier model (full training set) ===
+
+Classification via Regression
+
+Classifier for class with index 0:
+
+5 pruned model tree:
+(using smoothed linear models)
+
+the <= 0.5 : 
+|   read <= 0.5 : LM1 (52/36.722%)
+|   read >  0.5 : LM2 (47/0%)
+the >  0.5 : 
+|   most <= 0.5 : 
+|   |   should <= 0.5 : 
+|   |   |   one <= 0.5 : 
+|   |   |   |   want <= 0.5 : LM3 (27/0%)
+|   |   |   |   want >  0.5 : LM4 (9/47.14%)
+|   |   |   one >  0.5 : 
+|   |   |   |   don <= 0.5 : LM5 (13/39.223%)
+|   |   |   |   don >  0.5 : LM6 (7/0%)
+|   |   should >  0.5 : LM7 (15/0%)
+|   most >  0.5 : LM8 (30/0%)
+
+LM num: 1
+@@class@@ = 
+	0.7252 * 1 
+	- 0.0889 * The 
+	+ 0.0139 * These 
+	- 0.0161 * a 
+	+ 0.0929 * book 
+	+ 0.0114 * don 
+	- 0.0222 * good 
+	- 0.0074 * one 
+	- 0.0181 * read 
+	+ 0.1149 * the 
+	+ 0.0295
+
+LM num: 2
+@@class@@ = 
+	0.1424 * 1 
+	- 0.0185 * The 
+	+ 0.0139 * These 
+	- 0.0161 * a 
+	+ 0.0221 * book 
+	+ 0.0114 * don 
+	- 0.0233 * good 
+	- 0.0074 * one 
+	- 0.0195 * read 
+	+ 0.1149 * the 
+	+ 0.0193
+
+LM num: 3
+@@class@@ = 
+	0.0346 * 1 
+	+ 0.0165 * The 
+	+ 0.0374 * These 
+	- 0.196 * a 
+	+ 0.0902 * don 
+	- 0.0089 * good 
+	+ 0.0102 * most 
+	- 0.0799 * one 
+	+ 0.1129 * the 
+	+ 0.0664 * thi 
+	- 0.0402 * want 
+	+ 0.8177
+
+LM num: 4
+@@class@@ = 
+	0.0346 * 1 
+	+ 0.0165 * The 
+	+ 0.0374 * These 
+	- 0.196 * a 
+	+ 0.0902 * don 
+	- 0.0089 * good 
+	+ 0.0102 * most 
+	- 0.0799 * one 
+	+ 0.1129 * the 
+	+ 0.152 * thi 
+	- 0.0537 * want 
+	+ 0.7359
+
+LM num: 5
+@@class@@ = 
+	0.0346 * 1 
+	+ 0.0993 * The 
+	+ 0.1062 * These 
+	- 0.4668 * a 
+	+ 0.1828 * don 
+	- 0.0089 * good 
+	+ 0.0102 * most 
+	- 0.0999 * one 
+	+ 0.1129 * the 
+	+ 0.0616 * thi 
+	- 0.0324 * want 
+	+ 0.685
+
+LM num: 6
+@@class@@ = 
+	0.0346 * 1 
+	+ 0.0241 * The 
+	+ 0.1219 * These 
+	- 0.3409 * a 
+	+ 0.2025 * don 
+	- 0.0089 * good 
+	+ 0.0102 * most 
+	- 0.0999 * one 
+	+ 0.1129 * the 
+	+ 0.0616 * thi 
+	- 0.0324 * want 
+	+ 0.7452
+
+LM num: 7
+@@class@@ = 
+	0.0346 * 1 
+	+ 0.0136 * These 
+	- 0.2174 * a 
+	+ 0.0756 * don 
+	- 0.0089 * good 
+	+ 0.0102 * most 
+	- 0.06 * one 
+	+ 0.1129 * the 
+	+ 0.0538 * thi 
+	+ 0.8315
+
+LM num: 8
+@@class@@ = 
+	0.0346 * 1 
+	+ 0.0136 * These 
+	- 0.1081 * a 
+	+ 0.0357 * don 
+	- 0.0089 * good 
+	+ 0.0195 * most 
+	- 0.0289 * one 
+	+ 0.1129 * the 
+	+ 0.0299 * thi 
+	+ 0.8513
+
+Number of Rules : 8
+
+Classifier for class with index 1:
+
+5 pruned model tree:
+(using smoothed linear models)
+
+the <= 0.5 : 
+|   read <= 0.5 : LM1 (52/36.722%)
+|   read >  0.5 : LM2 (47/0%)
+the >  0.5 : 
+|   most <= 0.5 : 
+|   |   should <= 0.5 : 
+|   |   |   one <= 0.5 : 
+|   |   |   |   want <= 0.5 : LM3 (27/0%)
+|   |   |   |   want >  0.5 : LM4 (9/47.14%)
+|   |   |   one >  0.5 : 
+|   |   |   |   don <= 0.5 : LM5 (13/39.223%)
+|   |   |   |   don >  0.5 : LM6 (7/0%)
+|   |   should >  0.5 : LM7 (15/0%)
+|   most >  0.5 : LM8 (30/0%)
+
+LM num: 1
+@@class@@ = 
+	-0.7252 * 1 
+	+ 0.0889 * The 
+	- 0.0139 * These 
+	+ 0.0161 * a 
+	- 0.0929 * book 
+	- 0.0114 * don 
+	+ 0.0222 * good 
+	+ 0.0074 * one 
+	+ 0.0181 * read 
+	- 0.1149 * the 
+	+ 0.9705
+
+LM num: 2
+@@class@@ = 
+	-0.1424 * 1 
+	+ 0.0185 * The 
+	- 0.0139 * These 
+	+ 0.0161 * a 
+	- 0.0221 * book 
+	- 0.0114 * don 
+	+ 0.0233 * good 
+	+ 0.0074 * one 
+	+ 0.0195 * read 
+	- 0.1149 * the 
+	+ 0.9807
+
+LM num: 3
+@@class@@ = 
+	-0.0346 * 1 
+	- 0.0165 * The 
+	- 0.0374 * These 
+	+ 0.196 * a 
+	- 0.0902 * don 
+	+ 0.0089 * good 
+	- 0.0102 * most 
+	+ 0.0799 * one 
+	- 0.1129 * the 
+	- 0.0664 * thi 
+	+ 0.0402 * want 
+	+ 0.1823
+
+LM num: 4
+@@class@@ = 
+	-0.0346 * 1 
+	- 0.0165 * The 
+	- 0.0374 * These 
+	+ 0.196 * a 
+	- 0.0902 * don 
+	+ 0.0089 * good 
+	- 0.0102 * most 
+	+ 0.0799 * one 
+	- 0.1129 * the 
+	- 0.152 * thi 
+	+ 0.0537 * want 
+	+ 0.2641
+
+LM num: 5
+@@class@@ = 
+	-0.0346 * 1 
+	- 0.0993 * The 
+	- 0.1062 * These 
+	+ 0.4668 * a 
+	- 0.1828 * don 
+	+ 0.0089 * good 
+	- 0.0102 * most 
+	+ 0.0999 * one 
+	- 0.1129 * the 
+	- 0.0616 * thi 
+	+ 0.0324 * want 
+	+ 0.315
+
+LM num: 6
+@@class@@ = 
+	-0.0346 * 1 
+	- 0.0241 * The 
+	- 0.1219 * These 
+	+ 0.3409 * a 
+	- 0.2025 * don 
+	+ 0.0089 * good 
+	- 0.0102 * most 
+	+ 0.0999 * one 
+	- 0.1129 * the 
+	- 0.0616 * thi 
+	+ 0.0324 * want 
+	+ 0.2548
+
+LM num: 7
+@@class@@ = 
+	-0.0346 * 1 
+	- 0.0136 * These 
+	+ 0.2174 * a 
+	- 0.0756 * don 
+	+ 0.0089 * good 
+	- 0.0102 * most 
+	+ 0.06 * one 
+	- 0.1129 * the 
+	- 0.0538 * thi 
+	+ 0.1685
+
+LM num: 8
+@@class@@ = 
+	-0.0346 * 1 
+	- 0.0136 * These 
+	+ 0.1081 * a 
+	- 0.0357 * don 
+	+ 0.0089 * good 
+	- 0.0195 * most 
+	+ 0.0289 * one 
+	- 0.1129 * the 
+	- 0.0299 * thi 
+	+ 0.1487
+
+Number of Rules : 8
+
+
+
+Time taken to build model: 4.09 seconds
+
+Time taken to test model on training data: 0.14 seconds
+
+=== Error on training data ===
+
+Correctly Classified Instances         196               98      %
+Incorrectly Classified Instances         4                2      %
+Kappa statistic                          0.96  
+ean absolute error                      0.0542
+Root mean squared error                  0.1375
+Relative absolute error                 10.842  %
+Root relative squared error             27.4914 %
+Total Number of Instances              200     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.980    0.020    0.980      0.980    0.980      0.960    0.998     0.998     helpful_reviews
+                 0.980    0.020    0.980      0.980    0.980      0.960    0.998     0.997     unhelpful_reviews
+Weighted Avg.    0.980    0.020    0.980      0.980    0.980      0.960    0.998     0.997     
+
+
+=== Confusion Matrix ===
+
+  a  b   <-- classified as
+ 98  2 |  a = helpful_reviews
+  2 98 |  b = unhelpful_reviews
+
+Time taken to perform cross-validation: 19.14 seconds
+
+
+=== Stratified cross-validation ===
+
+Correctly Classified Instances         188               94      %
+Incorrectly Classified Instances        12                6      %
+Kappa statistic                          0.88  
+ean absolute error                      0.0948
+Root mean squared error                  0.2345
+Relative absolute error                 18.9616 %
+Root relative squared error             46.9039 %
+Total Number of Instances              200     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.930    0.050    0.949      0.930    0.939      0.880    0.962     0.948     helpful_reviews
+                 0.950    0.070    0.931      0.950    0.941      0.880    0.962     0.971     unhelpful_reviews
+Weighted Avg.    0.940    0.060    0.940      0.940    0.940      0.880    0.962     0.960     
+
+
+=== Confusion Matrix ===
+
+  a  b   <-- classified as
+ 93  7 |  a = helpful_reviews
+  5 95 |  b = unhelpful_reviews
+
+bui@f6linuxA7:~$ ./text_binary_classify.sh /home/bui/weka-3-8-5 /home/bui/training/with_tweets
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by weka.core.WekaPackageClassLoaderManager (file:/home/bui/weka-3-8-5/weka.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of weka.core.WekaPackageClassLoaderManager
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by weka.core.WekaPackageClassLoaderManager (file:/home/bui/weka-3-8-5/weka.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of weka.core.WekaPackageClassLoaderManager
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+Dec 06, 2021 7:12:26 AM com.github.fommil.netlib.BLAS <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeSystemBLAS
+Dec 06, 2021 7:12:27 AM com.github.fommil.netlib.BLAS <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeRefBLAS
+Dec 06, 2021 7:12:27 AM com.github.fommil.netlib.LAPACK <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeSystemLAPACK
+Dec 06, 2021 7:12:27 AM com.github.fommil.netlib.LAPACK <clinit>
+WARNING: Failed to load implementation from: com.github.fommil.netlib.NativeRefLAPACK
+
+Options: -W weka.classifiers.trees.M5P -num-decimal-places 4 
+
+=== Classifier model (full training set) ===
+
+Classification via Regression
+
+Classifier for class with index 0:
+
+5 pruned model tree:
+(using smoothed linear models)
+
+a <= 0.5 : 
+|   which <= 0.5 : LM1 (121/76.214%)
+|   which >  0.5 : LM2 (36/32.839%)
+a >  0.5 : 
+|   @octolinz16 <= 0.5 : LM3 (31/0%)
+|   @octolinz16 >  0.5 : LM4 (12/0%)
+
+LM num: 1
+@@class@@ = 
+	0.022 * *sigh* 
+	- 0.0132 * 2y1zl 
+	- 0.0312 * @caregiv 
+	+ 0.3759 * A 
+	+ 0.2572 * Blah 
+	+ 0.0089 * Nee 
+	+ 0.2154 * There 
+	+ 0.1422 * Thi 
+	- 0.0429 * a 
+	+ 0.0179 * detaile 
+	+ 0.0084 * file 
+	+ 0.0361 * reference 
+	+ 0.0114 * some 
+	- 0.665 * t 
+	- 0.0112 * very 
+	+ 0.0353 * which 
+	+ 0.0476
+
+LM num: 2
+@@class@@ = 
+	0.0417 * *sigh* 
+	- 0.0351 * 2y1zl 
+	+ 0.5597 * @caregiv 
+	+ 0.1841 * A 
+	+ 0.0801 * Blah 
+	+ 0.0238 * Nee 
+	+ 0.0575 * There 
+	+ 0.0407 * Thi 
+	- 0.0429 * a 
+	+ 0.0179 * detaile 
+	+ 0.0084 * file 
+	+ 0.0686 * reference 
+	+ 0.0304 * some 
+	- 0.2257 * t 
+	- 0.0298 * very 
+	+ 0.0674 * which 
+	+ 0.0163
+
+LM num: 3
+@@class@@ = 
+	0.0303 * *sigh* 
+	- 0.0311 * @caregiv 
+	+ 0.0254 * @octolinz16 
+	+ 0.1127 * A 
+	+ 0.0295 * Blah 
+	+ 0.0342 * There 
+	+ 0.0286 * Thi 
+	- 0.1272 * a 
+	+ 0.149 * appear 
+	+ 0.2212 * clear 
+	+ 0.0532 * detaile 
+	+ 0.0249 * file 
+	+ 0.0491 * reference 
+	- 0.1307 * t 
+	+ 0.0476 * which 
+	+ 0.0104
+
+LM num: 4
+@@class@@ = 
+	0.0303 * *sigh* 
+	- 0.0311 * @caregiv 
+	+ 0.0433 * @octolinz16 
+	+ 0.1127 * A 
+	+ 0.0295 * Blah 
+	+ 0.0342 * There 
+	+ 0.0286 * Thi 
+	- 0.1272 * a 
+	+ 0.5834 * appear 
+	+ 0.7063 * clear 
+	+ 0.0532 * detaile 
+	+ 0.0249 * file 
+	+ 0.0491 * reference 
+	- 0.1307 * t 
+	+ 0.0476 * which 
+	+ 0.0071
+
+Number of Rules : 4
+
+Classifier for class with index 1:
+
+5 pruned model tree:
+(using smoothed linear models)
+
+a <= 0.5 : 
+|   which <= 0.5 : LM1 (121/76.214%)
+|   which >  0.5 : LM2 (36/32.839%)
+a >  0.5 : 
+|   @octolinz16 <= 0.5 : LM3 (31/0%)
+|   @octolinz16 >  0.5 : LM4 (12/0%)
+
+LM num: 1
+@@class@@ = 
+	-0.022 * *sigh* 
+	+ 0.0132 * 2y1zl 
+	+ 0.0312 * @caregiv 
+	- 0.3759 * A 
+	- 0.2572 * Blah 
+	- 0.0089 * Nee 
+	- 0.2154 * There 
+	- 0.1422 * Thi 
+	+ 0.0429 * a 
+	- 0.0179 * detaile 
+	- 0.0084 * file 
+	- 0.0361 * reference 
+	- 0.0114 * some 
+	+ 0.665 * t 
+	+ 0.0112 * very 
+	- 0.0353 * which 
+	+ 0.9524
+
+LM num: 2
+@@class@@ = 
+	-0.0417 * *sigh* 
+	+ 0.0351 * 2y1zl 
+	- 0.5597 * @caregiv 
+	- 0.1841 * A 
+	- 0.0801 * Blah 
+	- 0.0238 * Nee 
+	- 0.0575 * There 
+	- 0.0407 * Thi 
+	+ 0.0429 * a 
+	- 0.0179 * detaile 
+	- 0.0084 * file 
+	- 0.0686 * reference 
+	- 0.0304 * some 
+	+ 0.2257 * t 
+	+ 0.0298 * very 
+	- 0.0674 * which 
+	+ 0.9837
+
+LM num: 3
+@@class@@ = 
+	-0.0303 * *sigh* 
+	+ 0.0311 * @caregiv 
+	- 0.0254 * @octolinz16 
+	- 0.1127 * A 
+	- 0.0295 * Blah 
+	- 0.0342 * There 
+	- 0.0286 * Thi 
+	+ 0.1272 * a 
+	- 0.149 * appear 
+	- 0.2212 * clear 
+	- 0.0532 * detaile 
+	- 0.0249 * file 
+	- 0.0491 * reference 
+	+ 0.1307 * t 
+	- 0.0476 * which 
+	+ 0.9896
+
+LM num: 4
+@@class@@ = 
+	-0.0303 * *sigh* 
+	+ 0.0311 * @caregiv 
+	- 0.0433 * @octolinz16 
+	- 0.1127 * A 
+	- 0.0295 * Blah 
+	- 0.0342 * There 
+	- 0.0286 * Thi 
+	+ 0.1272 * a 
+	- 0.5834 * appear 
+	- 0.7063 * clear 
+	- 0.0532 * detaile 
+	- 0.0249 * file 
+	- 0.0491 * reference 
+	+ 0.1307 * t 
+	- 0.0476 * which 
+	+ 0.9929
+
+Number of Rules : 4
+
+
+
+Time taken to build model: 6.47 seconds
+
+Time taken to test model on training data: 0.34 seconds
+
+=== Error on training data ===
+
+Correctly Classified Instances         177               88.5    %
+Incorrectly Classified Instances        23               11.5    %
+Kappa statistic                          0.77  
+ean absolute error                      0.2051
+Root mean squared error                  0.3001
+Relative absolute error                 41.0106 %
+Root relative squared error             60.0292 %
+Total Number of Instances              200     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.910    0.140    0.867      0.910    0.888      0.771    0.959     0.960     helpful_reviews
+                 0.860    0.090    0.905      0.860    0.882      0.771    0.959     0.960     unhelpful_reviews
+Weighted Avg.    0.885    0.115    0.886      0.885    0.885      0.771    0.959     0.960     
+
+
+=== Confusion Matrix ===
+
+  a  b   <-- classified as
+ 91  9 |  a = helpful_reviews
+ 14 86 |  b = unhelpful_reviews
+
+Time taken to perform cross-validation: 33.11 seconds
+
+
+=== Stratified cross-validation ===
+
+Correctly Classified Instances         162               81      %
+Incorrectly Classified Instances        38               19      %
+Kappa statistic                          0.62  
+ean absolute error                      0.2548
+Root mean squared error                  0.3538
+Relative absolute error                 50.9501 %
+Root relative squared error             70.7673 %
+Total Number of Instances              200     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.810    0.190    0.810      0.810    0.810      0.620    0.906     0.910     helpful_reviews
+                 0.810    0.190    0.810      0.810    0.810      0.620    0.906     0.900     unhelpful_reviews
+Weighted Avg.    0.810    0.190    0.810      0.810    0.810      0.620    0.906     0.905     
+
+
+=== Confusion Matrix ===
+
+  a  b   <-- classified as
+ 81 19 |  a = helpful_reviews
+ 19 81 |  b = unhelpful_reviews
+
+EXPLANATION: Since my script generates the text_example directory etc. for me, I simply used the
+paths to either training/with_tweets or training/without_tweets for my second parameter, which
+each contain REVIEWS and REVIEWS_UNHELPFUL directories. training/with_tweets has helpful and
+unhelpful reviews with tweets appended after the review body, whereas reviews in training/without_tweets
+only have the review body. I know that my script works since I got the same results running the script
+with training/with_tweets as I did when entering the commands.
+
+----------------------------------------------------------------------------------------------------------------------
+10) Do you see any difference in the training results between using just amazon review_body text, vs. combining the 
+    review_body text with twitter tweets? Which gives better results?
+
+EXPLANATION: I do see a difference -- the files WITHOUT tweets in them have a higher accuracy/better result when 
+running the weka classifier command compared to the files WITH tweets. I think this may be because the overlap in 
+words due to common tweets between helpful and unhelpful reviews may make it slightly harder for the machine 
+learning model to differentiate between them.
+
+======================================================================================================================
+bui@f6linuxA7:~$ exit
+
+Script done on 2021-12-06 07:18:26+00:00 [COMMAND_EXIT_CODE="0"]
